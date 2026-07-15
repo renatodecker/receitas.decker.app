@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+amplify_outputs.json
+.amplify
+npm-debug.log*
