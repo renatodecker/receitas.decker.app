@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
-import { obterSessaoArea, salvarSessaoArea } from '../lib/storage';
+import { obterPreferencias } from '../lib/consent';
+import { definirSessaoArea, obterSessaoArea } from '../lib/storage';
+
+type Modo = 'inicial' | 'entrar' | 'criar' | 'criada';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [modo, setModo] = useState<'inicial' | 'entrar' | 'criar'>('inicial');
+  const [modo, setModo] = useState<Modo>('inicial');
   const [codigo, setCodigo] = useState('');
   const [pin, setPin] = useState('');
   const [nome, setNome] = useState('');
+  const [areaCriada, setAreaCriada] = useState<{ codigo: string; pin: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -30,7 +35,7 @@ export default function Home() {
     setCarregando(true);
     try {
       await api.obterArea(codigoNormalizado);
-      salvarSessaoArea({ codigo: codigoNormalizado, pin: pin.trim() });
+      definirSessaoArea({ codigo: codigoNormalizado, pin: pin.trim() }, obterPreferencias()?.lembrarArea ?? false);
       navigate(`/area/${codigoNormalizado}`);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : 'Não foi possível entrar na área.');
@@ -42,20 +47,29 @@ export default function Home() {
   async function criar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
-    if (!/^\d{4,6}$/.test(pin.trim())) {
-      setErro('O PIN deve ter de 4 a 6 dígitos numéricos.');
-      return;
-    }
     setCarregando(true);
     try {
-      const { codigo: novoCodigo } = await api.criarArea(pin.trim(), nome.trim() || undefined);
-      salvarSessaoArea({ codigo: novoCodigo, pin: pin.trim() });
-      navigate(`/area/${novoCodigo}`);
+      const resultado = await api.criarArea(nome.trim() || undefined);
+      setAreaCriada(resultado);
+      setModo('criada');
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : 'Não foi possível criar a área.');
     } finally {
       setCarregando(false);
     }
+  }
+
+  function continuarAposCriar() {
+    if (!areaCriada) return;
+    definirSessaoArea(areaCriada, obterPreferencias()?.lembrarArea ?? false);
+    navigate(`/area/${areaCriada.codigo}`);
+  }
+
+  async function copiarPin() {
+    if (!areaCriada) return;
+    await navigator.clipboard.writeText(areaCriada.pin);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
   }
 
   return (
@@ -94,7 +108,7 @@ export default function Home() {
               className="input mt-1"
               type="password"
               inputMode="numeric"
-              placeholder="4 a 6 dígitos"
+              placeholder="6 dígitos"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
             />
@@ -121,20 +135,10 @@ export default function Home() {
               autoFocus
             />
           </label>
-          <label className="text-sm font-semibold text-primary-800">
-            Defina um PIN (4 a 6 dígitos)
-            <input
-              className="input mt-1"
-              type="password"
-              inputMode="numeric"
-              placeholder="Ex.: 123456"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-            />
-          </label>
           <p className="text-xs text-primary-500">
-            O PIN é necessário para cadastrar receitas e mexer na lista. Não existe recuperação —
-            se perder o PIN, a área fica só para leitura.
+            O código e o PIN de acesso são gerados automaticamente na próxima tela. O PIN é
+            necessário para cadastrar receitas e mexer na lista. Não existe recuperação — se
+            perder o PIN, a área fica só para leitura.
           </p>
           {erro && <p className="text-sm text-red-600">{erro}</p>}
           <button className="btn-primary" type="submit" disabled={carregando}>
@@ -144,6 +148,28 @@ export default function Home() {
             Voltar
           </button>
         </form>
+      )}
+
+      {modo === 'criada' && areaCriada && (
+        <div className="card flex w-full max-w-sm flex-col gap-4">
+          <p className="text-primary-800">Área criada! Anote o código e o PIN — não tem como recuperar depois.</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">Código da área</p>
+            <p className="font-mono text-2xl font-bold text-primary-800">{areaCriada.codigo}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">PIN</p>
+            <div className="flex items-center gap-3">
+              <p className="font-mono text-2xl font-bold text-primary-800">{areaCriada.pin}</p>
+              <button type="button" className="text-sm font-semibold text-primary-600 underline" onClick={copiarPin}>
+                {copiado ? 'Copiado!' : 'Copiar'}
+              </button>
+            </div>
+          </div>
+          <button className="btn-primary" onClick={continuarAposCriar}>
+            Continuar
+          </button>
+        </div>
       )}
     </div>
   );

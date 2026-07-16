@@ -1,14 +1,21 @@
 import bcrypt from 'bcryptjs';
+import { randomInt } from 'node:crypto';
 import { getItem, updateItem } from './db';
 import type { ErroApi, MetaItem } from './types';
 
 const MAX_TENTATIVAS = 5;
 const BLOQUEIO_MS = 15 * 60 * 1000;
+const DIGITOS_PIN = 6;
 
 export interface ResultadoPin {
   ok: boolean;
   status?: 401 | 403 | 404;
   body?: ErroApi;
+}
+
+/** Gera um PIN numérico de 6 dígitos — o sistema decide, o usuário não digita um PIN próprio. */
+export function gerarPin(): string {
+  return String(randomInt(0, 10 ** DIGITOS_PIN)).padStart(DIGITOS_PIN, '0');
 }
 
 export async function gerarHashPin(pin: string): Promise<string> {

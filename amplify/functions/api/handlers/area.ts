@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { gerarCodigoArea } from '../codigoArea';
 import { putItem, queryArea } from '../db';
-import { gerarHashPin } from '../pin';
+import { gerarHashPin, gerarPin } from '../pin';
 import type { ListaItem, MetaItem, ReceitaItem } from '../types';
-import { ErroValidacao, validarPinFormato } from '../validacao';
+import { ErroValidacao } from '../validacao';
 
 interface Resposta {
   status: number;
@@ -13,12 +13,12 @@ interface Resposta {
 const MAX_TENTATIVAS_CODIGO = 5;
 
 export async function criarArea(body: unknown): Promise<Resposta> {
-  const { pin, nome } = (body ?? {}) as { pin?: unknown; nome?: unknown };
-  validarPinFormato(pin);
+  const { nome } = (body ?? {}) as { nome?: unknown };
   if (nome !== undefined && (typeof nome !== 'string' || nome.length > 80)) {
     throw new ErroValidacao({ erro: 'nome_invalido', mensagem: 'Nome da área inválido (máx. 80 caracteres).' });
   }
 
+  const pin = gerarPin();
   const pinHash = await gerarHashPin(pin);
   const criadaEm = new Date().toISOString();
 
@@ -55,7 +55,7 @@ export async function criarArea(body: unknown): Promise<Resposta> {
   };
   await putItem(lista);
 
-  return { status: 201, body: { codigo } };
+  return { status: 201, body: { codigo, pin } };
 }
 
 export async function obterArea(codigo: string): Promise<Resposta> {

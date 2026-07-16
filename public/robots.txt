@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://receita.decker.app.br/sitemap.xml

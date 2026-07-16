@@ -6,24 +6,44 @@ export interface SessaoArea {
   pin: string;
 }
 
+// Sessão em memória — vive só durante a aba aberta, nunca é persistida.
+// É o que garante que o app funcione na visita atual mesmo sem consentimento
+// para lembrar a área no aparelho (preferência "lembrarArea").
+let sessaoEmMemoria: SessaoArea | null = null;
+
 /**
- * Persiste código + PIN em claro no localStorage. Risco aceito para este
- * domínio (área doméstica, sem dados sensíveis) — a defesa é o rate limit
- * de tentativas de PIN na Lambda, não a proteção do valor no dispositivo.
+ * Define a sessão da área atual. Só grava em localStorage (sobrevive a um
+ * reload / nova visita) se `persistir` for true — isto é, se o usuário deu
+ * consentimento para a preferência "lembrar minha área neste aparelho".
+ * Sem consentimento, a sessão ainda fica disponível em memória para o
+ * restante desta visita.
  */
-export function salvarSessaoArea(sessao: SessaoArea): void {
-  localStorage.setItem(CHAVE_CODIGO, sessao.codigo);
-  localStorage.setItem(CHAVE_PIN, sessao.pin);
+export function definirSessaoArea(sessao: SessaoArea, persistir: boolean): void {
+  sessaoEmMemoria = sessao;
+  if (persistir) {
+    localStorage.setItem(CHAVE_CODIGO, sessao.codigo);
+    localStorage.setItem(CHAVE_PIN, sessao.pin);
+  }
+}
+
+/** Grava em localStorage a sessão que já está em memória, se houver — usado quando o consentimento muda de "não" para "sim" no meio da visita. */
+export function persistirSessaoEmMemoria(): void {
+  if (!sessaoEmMemoria) return;
+  localStorage.setItem(CHAVE_CODIGO, sessaoEmMemoria.codigo);
+  localStorage.setItem(CHAVE_PIN, sessaoEmMemoria.pin);
 }
 
 export function obterSessaoArea(): SessaoArea | null {
+  if (sessaoEmMemoria) return sessaoEmMemoria;
   const codigo = localStorage.getItem(CHAVE_CODIGO);
   const pin = localStorage.getItem(CHAVE_PIN);
   if (!codigo || !pin) return null;
-  return { codigo, pin };
+  sessaoEmMemoria = { codigo, pin };
+  return sessaoEmMemoria;
 }
 
 export function limparSessaoArea(): void {
+  sessaoEmMemoria = null;
   localStorage.removeItem(CHAVE_CODIGO);
   localStorage.removeItem(CHAVE_PIN);
 }

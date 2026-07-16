@@ -42,8 +42,8 @@ async function requisitar<T>(path: string, opcoes: OpcoesRequisicao = {}): Promi
 }
 
 export const api = {
-  criarArea: (pin: string, nome?: string) =>
-    requisitar<{ codigo: string }>('/area', { method: 'POST', body: { pin, nome } }),
+  criarArea: (nome?: string) =>
+    requisitar<{ codigo: string; pin: string }>('/area', { method: 'POST', body: { nome } }),
 
   obterArea: (codigo: string) => requisitar<AreaCompleta>(`/area/${codigo}`),
 

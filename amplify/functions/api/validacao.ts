@@ -20,12 +20,6 @@ const UNIDADES_VALIDAS: Unidade[] = [
   'pitada',
 ];
 
-export function validarPinFormato(pin: unknown): asserts pin is string {
-  if (typeof pin !== 'string' || !/^\d{4,6}$/.test(pin)) {
-    throw new ErroValidacao({ erro: 'pin_invalido_formato', mensagem: 'O PIN deve ter de 4 a 6 dígitos numéricos.' });
-  }
-}
-
 export function validarNomeReceita(nome: unknown): asserts nome is string {
   if (typeof nome !== 'string' || nome.trim().length < 1 || nome.trim().length > 120) {
     throw new ErroValidacao({ erro: 'nome_invalido', mensagem: 'O nome da receita deve ter entre 1 e 120 caracteres.' });
