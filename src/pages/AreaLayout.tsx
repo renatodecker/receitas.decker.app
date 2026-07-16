@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import HubIcon from '../components/HubIcon';
 import { useArea } from '../context/AreaContext';
 import { linkCompartilharArea } from '../lib/whatsapp';
 
@@ -107,9 +108,12 @@ export default function AreaLayout() {
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
       <header className="flex items-center justify-between gap-2 border-b border-primary-100 bg-white px-4 py-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-primary-500">{meta.nome ?? 'Área'}</p>
-          <p className="font-mono text-sm font-bold text-primary-800">{codigo}</p>
+        <div className="flex items-center gap-3">
+          <HubIcon />
+          <div>
+            <p className="text-xs uppercase tracking-wide text-primary-500">{meta.nome ?? 'Área'}</p>
+            <p className="font-mono text-sm font-bold text-primary-800">{codigo}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <CompartilharArea codigo={codigo} pin={pin} />

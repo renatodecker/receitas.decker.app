@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
+import HubIcon from '../components/HubIcon';
 import { esquecerArea, lembrarArea, listarAreasConhecidas, type AreaConhecida } from '../lib/areasConhecidas';
 import { isCodigoValido, normalizarCodigo } from '../lib/formatoCodigo';
 
@@ -79,7 +80,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-6 pt-12">
+    <div className="flex min-h-screen flex-col items-center gap-6 p-6 pt-8">
+      <div className="w-full max-w-sm">
+        <HubIcon />
+      </div>
+
       <div className="text-center">
         <h1 className="text-3xl font-extrabold text-primary-700">Receitas</h1>
         <p className="mt-1 text-primary-600">Receitas e lista de compras da família, sem login.</p>
