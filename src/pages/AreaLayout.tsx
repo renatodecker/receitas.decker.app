@@ -24,7 +24,7 @@ function CompartilharArea({ codigo, pin }: { codigo: string; pin: string }) {
             />
             Incluir PIN no link
           </label>
-          {!pin && <p className="text-xs text-primary-500">Entre na área com o PIN para poder incluí-lo.</p>}
+          {!pin && <p className="text-xs text-primary-500">Desbloqueie a edição para poder incluir o PIN.</p>}
           <a
             className="btn-primary mt-2 block text-center"
             href={linkCompartilharArea(codigo, incluirPin ? pin : undefined)}
@@ -40,8 +40,69 @@ function CompartilharArea({ codigo, pin }: { codigo: string; pin: string }) {
   );
 }
 
+function DesbloquearEdicao() {
+  const { desbloquear } = useArea();
+  const [aberto, setAberto] = useState(false);
+  const [pinDigitado, setPinDigitado] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
+  const [verificando, setVerificando] = useState(false);
+
+  async function confirmar(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setVerificando(true);
+    const resultado = await desbloquear(pinDigitado.trim());
+    setVerificando(false);
+    if (resultado.ok) {
+      setAberto(false);
+      setPinDigitado('');
+    } else {
+      setErro(resultado.mensagem);
+    }
+  }
+
+  if (!aberto) {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-xl bg-primary-100 px-4 py-2 text-sm text-primary-800">
+        <span>
+          <span className="mr-1 rounded-full bg-primary-200 px-2 py-0.5 text-xs font-bold uppercase">Leitor</span>
+          Modo leitura
+        </span>
+        <button className="font-semibold text-primary-700 underline" onClick={() => setAberto(true)}>
+          Desbloquear edição
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={confirmar} className="card flex flex-col gap-2">
+      <label className="text-sm font-semibold text-primary-800">
+        Digite o PIN para editar
+        <input
+          className="input mt-1"
+          type="password"
+          inputMode="numeric"
+          value={pinDigitado}
+          onChange={(e) => setPinDigitado(e.target.value)}
+          autoFocus
+        />
+      </label>
+      {erro && <p className="text-sm text-red-600">{erro}</p>}
+      <div className="flex gap-2">
+        <button className="btn-primary flex-1" type="submit" disabled={verificando}>
+          {verificando ? 'Verificando…' : 'Desbloquear'}
+        </button>
+        <button type="button" className="btn-secondary flex-1" onClick={() => setAberto(false)}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function AreaLayout() {
-  const { codigo, pin, meta, sair } = useArea();
+  const { codigo, pin, somenteLeitura, meta, voltarInicio } = useArea();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
@@ -52,11 +113,17 @@ export default function AreaLayout() {
         </div>
         <div className="flex items-center gap-2">
           <CompartilharArea codigo={codigo} pin={pin} />
-          <button className="text-sm text-primary-500 underline" onClick={sair}>
-            Sair
+          <button className="text-sm text-primary-500 underline" onClick={voltarInicio}>
+            Minhas áreas
           </button>
         </div>
       </header>
+
+      {somenteLeitura && (
+        <div className="px-4 pt-3">
+          <DesbloquearEdicao />
+        </div>
+      )}
 
       <nav className="flex border-b border-primary-100 bg-white">
         <NavLink

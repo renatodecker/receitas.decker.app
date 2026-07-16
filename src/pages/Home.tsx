@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
-import { obterPreferencias } from '../lib/consent';
-import { definirSessaoArea, obterSessaoArea } from '../lib/storage';
+import { esquecerArea, lembrarArea, listarAreasConhecidas, type AreaConhecida } from '../lib/areasConhecidas';
+import { isCodigoValido, normalizarCodigo } from '../lib/formatoCodigo';
 
-type Modo = 'inicial' | 'entrar' | 'criar' | 'criada';
+type Modo = 'lista' | 'entrar' | 'criar' | 'criada';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [modo, setModo] = useState<Modo>('inicial');
+  const [areasConhecidas, setAreasConhecidas] = useState<AreaConhecida[]>([]);
+  const [modo, setModo] = useState<Modo>('lista');
   const [codigo, setCodigo] = useState('');
-  const [pin, setPin] = useState('');
   const [nome, setNome] = useState('');
   const [areaCriada, setAreaCriada] = useState<{ codigo: string; pin: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
@@ -18,24 +18,30 @@ export default function Home() {
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    const sessao = obterSessaoArea();
-    if (sessao) {
-      navigate(`/area/${sessao.codigo}`, { replace: true });
-    }
-  }, [navigate]);
+    setAreasConhecidas(listarAreasConhecidas());
+  }, []);
+
+  function abrir(area: AreaConhecida) {
+    navigate(`/area/${area.codigo}`);
+  }
+
+  function esquecer(codigoParaEsquecer: string) {
+    esquecerArea(codigoParaEsquecer);
+    setAreasConhecidas(listarAreasConhecidas());
+  }
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
-    const codigoNormalizado = codigo.trim().toUpperCase();
-    if (!codigoNormalizado || !pin.trim()) {
-      setErro('Informe o código da área e o PIN.');
+    const codigoNormalizado = normalizarCodigo(codigo);
+    if (!isCodigoValido(codigoNormalizado)) {
+      setErro('Código inválido. Formato esperado: RCT-XXXXX.');
       return;
     }
     setCarregando(true);
     try {
-      await api.obterArea(codigoNormalizado);
-      definirSessaoArea({ codigo: codigoNormalizado, pin: pin.trim() }, obterPreferencias()?.lembrarArea ?? false);
+      const area = await api.obterArea(codigoNormalizado);
+      lembrarArea({ codigo: codigoNormalizado, pin: null, nome: area.meta.nome });
       navigate(`/area/${codigoNormalizado}`);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : 'Não foi possível entrar na área.');
@@ -61,7 +67,7 @@ export default function Home() {
 
   function continuarAposCriar() {
     if (!areaCriada) return;
-    definirSessaoArea(areaCriada, obterPreferencias()?.lembrarArea ?? false);
+    lembrarArea({ codigo: areaCriada.codigo, pin: areaCriada.pin, nome: nome.trim() || null });
     navigate(`/area/${areaCriada.codigo}`);
   }
 
@@ -73,54 +79,73 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
+    <div className="flex min-h-screen flex-col items-center gap-6 p-6 pt-12">
       <div className="text-center">
         <h1 className="text-3xl font-extrabold text-primary-700">Receitas</h1>
         <p className="mt-1 text-primary-600">Receitas e lista de compras da família, sem login.</p>
       </div>
 
-      {modo === 'inicial' && (
-        <div className="flex w-full max-w-sm flex-col gap-3">
-          <button className="btn-primary" onClick={() => setModo('entrar')}>
-            Entrar em uma área
-          </button>
-          <button className="btn-secondary" onClick={() => setModo('criar')}>
-            Criar nova área
-          </button>
-        </div>
-      )}
+      {modo === 'lista' && (
+        <div className="flex w-full max-w-sm flex-col gap-4">
+          {areasConhecidas.length > 0 && (
+            <div className="card flex flex-col gap-2">
+              <p className="text-sm font-semibold text-primary-700">Minhas áreas</p>
+              <ul className="flex flex-col gap-2">
+                {areasConhecidas.map((area) => (
+                  <li key={area.codigo} className="flex items-center gap-2 rounded-xl border border-primary-100 p-2">
+                    <div className="flex-1">
+                      <p className="font-semibold text-primary-800">{area.nome || area.codigo}</p>
+                      <p className="flex items-center gap-2 text-xs text-primary-500">
+                        <span className="font-mono">{area.codigo}</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase ${
+                            area.pin ? 'bg-accent-100 text-accent-700' : 'bg-primary-100 text-primary-600'
+                          }`}
+                        >
+                          {area.pin ? 'Editor' : 'Leitor'}
+                        </span>
+                      </p>
+                    </div>
+                    <button className="btn-primary !min-h-0 !px-3 !py-2 text-sm" onClick={() => abrir(area)}>
+                      Abrir
+                    </button>
+                    <button
+                      className="px-1 text-primary-400"
+                      aria-label="Esquecer área"
+                      onClick={() => esquecer(area.codigo)}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-      {modo === 'entrar' && (
-        <form onSubmit={entrar} className="card flex w-full max-w-sm flex-col gap-3">
-          <label className="text-sm font-semibold text-primary-800">
-            Código da área
-            <input
-              className="input mt-1"
-              placeholder="RCT-XXXXX"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
-              autoFocus
-            />
-          </label>
-          <label className="text-sm font-semibold text-primary-800">
-            PIN
-            <input
-              className="input mt-1"
-              type="password"
-              inputMode="numeric"
-              placeholder="6 dígitos"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-            />
-          </label>
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
-          <button className="btn-primary" type="submit" disabled={carregando}>
-            {carregando ? 'Entrando…' : 'Entrar'}
-          </button>
-          <button type="button" className="text-sm text-primary-600 underline" onClick={() => setModo('inicial')}>
-            Voltar
-          </button>
-        </form>
+          <div className="card flex flex-col gap-3">
+            <p className="text-sm font-semibold text-primary-700">Acessar área</p>
+            <form onSubmit={entrar} className="flex flex-col gap-3">
+              <input
+                className="input"
+                placeholder="RCT-XXXXX"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+              />
+              {erro && <p className="text-sm text-red-600">{erro}</p>}
+              <button className="btn-primary" type="submit" disabled={carregando}>
+                {carregando ? 'Entrando…' : 'Entrar'}
+              </button>
+            </form>
+            <div className="flex items-center gap-2 text-xs text-primary-400">
+              <div className="h-px flex-1 bg-primary-100" />
+              ou
+              <div className="h-px flex-1 bg-primary-100" />
+            </div>
+            <button className="btn-secondary" onClick={() => setModo('criar')}>
+              + Criar nova área
+            </button>
+          </div>
+        </div>
       )}
 
       {modo === 'criar' && (
@@ -144,7 +169,7 @@ export default function Home() {
           <button className="btn-primary" type="submit" disabled={carregando}>
             {carregando ? 'Criando…' : 'Criar área'}
           </button>
-          <button type="button" className="text-sm text-primary-600 underline" onClick={() => setModo('inicial')}>
+          <button type="button" className="text-sm text-primary-600 underline" onClick={() => setModo('lista')}>
             Voltar
           </button>
         </form>

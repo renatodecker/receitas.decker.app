@@ -9,7 +9,7 @@ import type { ItemLista } from '../types';
 const ATRASO_DESFAZER_MS = 5000;
 
 export default function ListaCompras() {
-  const { codigo, pin, lista, atualizarLista } = useArea();
+  const { codigo, pin, lista, somenteLeitura, atualizarLista } = useArea();
   const [pendentes, setPendentes] = useState<Record<string, true>>({});
   const [mostrarComprados, setMostrarComprados] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -102,11 +102,17 @@ export default function ListaCompras() {
 
       {itensAtivos.length === 0 && (
         <p className="text-center text-primary-500">
-          Lista vazia. Adicione itens a partir de uma{' '}
-          <Link to={`/area/${codigo}/lista/gerar`} className="underline">
-            receita
-          </Link>
-          .
+          {somenteLeitura ? (
+            'Lista vazia.'
+          ) : (
+            <>
+              Lista vazia. Adicione itens a partir de uma{' '}
+              <Link to={`/area/${codigo}/lista/gerar`} className="underline">
+                receita
+              </Link>
+              .
+            </>
+          )}
         </p>
       )}
 
@@ -120,7 +126,7 @@ export default function ListaCompras() {
                 className={`h-6 w-6 shrink-0 rounded-full border-2 ${riscado ? 'border-primary-600 bg-primary-600' : 'border-primary-300'}`}
                 aria-label="Marcar como comprado"
                 onClick={() => marcarComoComprado(item)}
-                disabled={riscado}
+                disabled={riscado || somenteLeitura}
               />
               <span className={`flex-1 ${riscado ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
                 {item.nome} — {formatarQuantidadeComUnidade(item.quantidade, item.unidade)}
@@ -156,17 +162,19 @@ export default function ListaCompras() {
                   <span className="flex-1 text-primary-500 line-through">
                     {item.nome} — {formatarQuantidadeComUnidade(item.quantidade, item.unidade)}
                   </span>
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-primary-600 underline"
-                    onClick={() => desriscarComprado(item.itemId)}
-                  >
-                    Desriscar
-                  </button>
+                  {!somenteLeitura && (
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-primary-600 underline"
+                      onClick={() => desriscarComprado(item.itemId)}
+                    >
+                      Desriscar
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
-            {itensComprados.length > 0 && (
+            {!somenteLeitura && itensComprados.length > 0 && (
               <button type="button" className="btn-danger" onClick={limparComprados}>
                 Limpar comprados
               </button>

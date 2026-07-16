@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import { useArea } from '../context/AreaContext';
 import { parseQuantidade } from '../lib/numero';
@@ -17,9 +17,10 @@ function linhaVazia(): LinhaIngrediente {
 }
 
 export default function ReceitaForm() {
-  const { codigo, pin, receitas, atualizarReceitas } = useArea();
+  const { codigo, pin, receitas, somenteLeitura, atualizarReceitas } = useArea();
   const { receitaId } = useParams<{ receitaId: string }>();
   const navigate = useNavigate();
+
   const receitaExistente = receitaId ? receitas.find((r) => r.receitaId === receitaId) : undefined;
   const editando = Boolean(receitaExistente);
 
@@ -32,6 +33,10 @@ export default function ReceitaForm() {
   );
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  if (somenteLeitura) {
+    return <Navigate to={`/area/${codigo}`} replace />;
+  }
 
   function atualizarLinha(indice: number, campo: keyof LinhaIngrediente, valor: string) {
     setIngredientes((atual) =>

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { gerarCodigoArea } from '../codigoArea';
 import { putItem, queryArea } from '../db';
-import { gerarHashPin, gerarPin } from '../pin';
+import { gerarHashPin, gerarPin, verificarPin } from '../pin';
 import type { ListaItem, MetaItem, ReceitaItem } from '../types';
 import { ErroValidacao } from '../validacao';
 
@@ -82,4 +82,11 @@ export async function obterArea(codigo: string): Promise<Resposta> {
       lista: lista ? { listaId: lista.listaId, nome: lista.nome, itens: lista.itens } : null,
     },
   };
+}
+
+/** Valida o PIN sem disparar nenhuma mutação — usado pelo front pra "desbloquear edição". */
+export async function verificarPinArea(codigo: string, pin: string | undefined): Promise<Resposta> {
+  const resultado = await verificarPin(codigo, pin);
+  if (!resultado.ok) return { status: resultado.status!, body: resultado.body };
+  return { status: 200, body: { ok: true } };
 }

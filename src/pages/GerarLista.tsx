@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import { useArea } from '../context/AreaContext';
 import { gerarItensLista } from '../lib/gerarLista';
 
 export default function GerarLista() {
-  const { codigo, pin, receitas, lista, atualizarLista } = useArea();
+  const { codigo, pin, receitas, lista, somenteLeitura, atualizarLista } = useArea();
   const navigate = useNavigate();
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
+
+  if (somenteLeitura) {
+    return <Navigate to={`/area/${codigo}`} replace />;
+  }
 
   function alternar(receitaId: string) {
     setSelecionadas((atual) => {

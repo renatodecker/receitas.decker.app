@@ -1,4 +1,4 @@
-import { criarArea, obterArea } from './handlers/area';
+import { criarArea, obterArea, verificarPinArea } from './handlers/area';
 import { criarReceita, editarReceita, excluirReceita } from './handlers/receita';
 import { gerarItensLista, limparComprados, mudarStatusItem } from './handlers/lista';
 import { ErroValidacao } from './validacao';
@@ -27,6 +27,16 @@ export async function rotear(req: RequisicaoRota): Promise<RespostaRota> {
     // GET /area/{codigo}
     if (req.method === 'GET' && segmentos.length === 2 && segmentos[0] === 'area') {
       return await obterArea(segmentos[1]);
+    }
+
+    // POST /area/{codigo}/verificar-pin
+    if (
+      req.method === 'POST' &&
+      segmentos.length === 3 &&
+      segmentos[0] === 'area' &&
+      segmentos[2] === 'verificar-pin'
+    ) {
+      return await verificarPinArea(segmentos[1], req.pin);
     }
 
     // POST /area/{codigo}/receita

@@ -6,7 +6,7 @@ import { gerarItensLista } from '../lib/gerarLista';
 import { formatarQuantidadeComUnidade } from '../lib/unidades';
 
 export default function ReceitaDetalhe() {
-  const { codigo, pin, receitas, lista, atualizarReceitas, atualizarLista } = useArea();
+  const { codigo, pin, receitas, lista, somenteLeitura, atualizarReceitas, atualizarLista } = useArea();
   const { receitaId } = useParams<{ receitaId: string }>();
   const navigate = useNavigate();
   const receita = receitas.find((r) => r.receitaId === receitaId);
@@ -79,19 +79,21 @@ export default function ReceitaDetalhe() {
 
       {erro && <p className="text-sm text-red-600">{erro}</p>}
 
-      <div className="flex flex-col gap-2">
-        <button className="btn-accent" onClick={adicionarALista} disabled={processando}>
-          Adicionar à lista de compras
-        </button>
-        <div className="flex gap-2">
-          <Link to={`/area/${codigo}/receitas/${receita.receitaId}/editar`} className="btn-secondary flex-1">
-            Editar
-          </Link>
-          <button className="btn-danger flex-1" onClick={excluir} disabled={processando}>
-            Excluir
+      {!somenteLeitura && (
+        <div className="flex flex-col gap-2">
+          <button className="btn-accent" onClick={adicionarALista} disabled={processando}>
+            Adicionar à lista de compras
           </button>
+          <div className="flex gap-2">
+            <Link to={`/area/${codigo}/receitas/${receita.receitaId}/editar`} className="btn-secondary flex-1">
+              Editar
+            </Link>
+            <button className="btn-danger flex-1" onClick={excluir} disabled={processando}>
+              Excluir
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

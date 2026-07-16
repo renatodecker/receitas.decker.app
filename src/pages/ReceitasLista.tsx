@@ -2,20 +2,22 @@ import { Link } from 'react-router-dom';
 import { useArea } from '../context/AreaContext';
 
 export default function ReceitasLista() {
-  const { receitas, codigo } = useArea();
+  const { receitas, codigo, somenteLeitura } = useArea();
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
-        <Link to="receitas/nova" className="btn-primary flex-1">
-          + Nova receita
-        </Link>
-        {receitas.length > 0 && (
-          <Link to="lista/gerar" className="btn-accent flex-1">
-            Gerar lista
+      {!somenteLeitura && (
+        <div className="flex gap-2">
+          <Link to="receitas/nova" className="btn-primary flex-1">
+            + Nova receita
           </Link>
-        )}
-      </div>
+          {receitas.length > 0 && (
+            <Link to="lista/gerar" className="btn-accent flex-1">
+              Gerar lista
+            </Link>
+          )}
+        </div>
+      )}
 
       {receitas.length === 0 && (
         <p className="mt-8 text-center text-primary-500">

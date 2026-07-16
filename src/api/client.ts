@@ -47,6 +47,9 @@ export const api = {
 
   obterArea: (codigo: string) => requisitar<AreaCompleta>(`/area/${codigo}`),
 
+  verificarPin: (codigo: string, pin: string) =>
+    requisitar<{ ok: true }>(`/area/${codigo}/verificar-pin`, { method: 'POST', pin }),
+
   criarReceita: (
     codigo: string,
     pin: string,
